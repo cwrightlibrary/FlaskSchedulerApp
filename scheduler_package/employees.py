@@ -1,82 +1,34 @@
 class Employee:
     def __init__(self):
-        self.name
-        self.rank
-        self.position
+        self.name = ""
+        self.rank = ""
+        self.position = ""
 
-        self.monday_hours
-        self.monday_lunch
-        self.tuesday_hours
-        self.tuesday_lunch
-        self.wednesday_hours
-        self.wednesday_lunch
-        self.thursday_hours
-        self.thursday_lunch
-        self.friday_1a_hours
-        self.friday_1a_lunch
-        self.friday_1b_hours
-        self.friday_1b_lunch
-        self.friday_2a_hours
-        self.friday_2a_lunch
-        self.friday_2b_hours
-        self.friday_2b_lunch
-        self.friday_3a_hours
-        self.friday_3a_lunch
-        self.friday_3b_hours
-        self.friday_3b_lunch
-        self.saturday_1a_hours
-        self.saturday_1a_lunch
-        self.saturday_1b_hours
-        self.saturday_1b_lunch
-        self.saturday_2a_hours
-        self.saturday_2a_lunch
-        self.saturday_2b_hours
-        self.saturday_2b_lunch
-        self.saturday_3a_hours
-        self.saturday_3a_lunch
-        self.saturday_3b_hours
-        self.saturday_3b_lunch
-        self.sunday_1
-        self.sunday_2
-        self.sunday_3
-
-        self.hours = [
-            self.monday_hours,
-            self.monday_lunch,
-            self.tuesday_hours,
-            self.tuesday_lunch,
-            self.wednesday_hours,
-            self.wednesday_lunch,
-            self.thursday_hours,
-            self.thursday_lunch,
-            self.friday_1a_hours,
-            self.friday_1a_lunch,
-            self.friday_1b_hours,
-            self.friday_1b_lunch,
-            self.friday_2a_hours,
-            self.friday_2a_lunch,
-            self.friday_2b_hours,
-            self.friday_2b_lunch,
-            self.friday_3a_hours,
-            self.friday_3a_lunch,
-            self.friday_3b_hours,
-            self.friday_3b_lunch,
-            self.saturday_1a_hours,
-            self.saturday_1a_lunch,
-            self.saturday_1b_hours,
-            self.saturday_1b_lunch,
-            self.saturday_2a_hours,
-            self.saturday_2a_lunch,
-            self.saturday_2b_hours,
-            self.saturday_2b_lunch,
-            self.saturday_3a_hours,
-            self.saturday_3a_lunch,
-            self.saturday_3b_hours,
-            self.saturday_3b_lunch,
-            self.sunday_1,
-            self.sunday_2,
-            self.sunday_3,
-        ]
+        self.hours = {}
+        self.print_hours = {}
     
     def string_to_hours(self):
-        print(self.hours[0])
+        self.print_hours = {key: [] for key in self.hours}
+        for key, hours in self.hours.items():
+            if hours != None:
+                hour1 = int(hours[0][:2])
+                hour2 = int(hours[1][:2])
+                minutes1 = int(hours[0][2:])
+                minutes2 = int(hours[1][2:])
+
+                hour1_12 = hour1 % 12 or 12
+                hour2_12 = hour2 % 12 or 12
+
+                converted_hours = []
+
+                if minutes1 == 0:
+                    converted_hours.append(f"{hour1_12}")
+                else:
+                    converted_hours.append(f"{hour1_12}:{minutes1:02}")
+                
+                if minutes2 == 0:
+                    converted_hours.append(f"{hour2_12}")
+                else:
+                    converted_hours.append(f"{hour2_12}:{minutes2:02}")
+
+                self.print_hours[key] = converted_hours

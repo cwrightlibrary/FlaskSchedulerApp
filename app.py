@@ -1,5 +1,6 @@
-import csv
 from flask import Flask, render_template, url_for
+
+from scheduler_package.utils import *
 
 app = Flask(__name__)
 
@@ -15,14 +16,10 @@ if __name__ == "__main__":
     employees_file = "models/employees.csv"
     employees_key = "models/employees_key.txt"
 
-    with open(employees_file, mode="r") as file:
-        csv_file = csv.reader(file)
-        for lines in csv_file:
-            key = open(employees_key, mode="r")
-            for line in key:
-                start_loc = line.index("= ")
-                old_name = line[:start_loc]
-                new_name = line[start_loc + 2:]
+    employees = employees_to_csv(employees_file, employees_key)
 
-                print(old_name + "\n" + new_name)
-
+    monday_hours = {}
+    
+    for employee in employees:
+        monday_hours["-".join(employee.print_hours)] = []
+        monday_hours["-".join(employee.print_hours)].append(employee.name)
