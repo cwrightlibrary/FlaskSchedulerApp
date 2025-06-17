@@ -2,7 +2,8 @@ from csv import reader
 
 from .employees import Employee
 
-def employees_to_csv(employees_file: str, employees_key: str="") -> list[Employee]:
+
+def employees_to_csv(employees_file: str, employees_key: str = "") -> list[Employee]:
     csv_fields = []
     csv_rows = []
 
@@ -17,14 +18,14 @@ def employees_to_csv(employees_file: str, employees_key: str="") -> list[Employe
 
         for row in csvreader:
             csv_rows.append(row)
-    
+
     if employees_key != "":
         valid_key = True
         with open(employees_key, "r") as key:
             for line in key:
-                names = [line[:line.index("= ")], line[line.index("= ") + 2:].strip()]
+                names = [line[: line.index("= ")], line[line.index("= ") + 2 :].strip()]
                 txt_rows.append(names)
-    
+
     for csv_row in csv_rows:
         employee = Employee()
         if valid_key:
@@ -45,8 +46,8 @@ def employees_to_csv(employees_file: str, employees_key: str="") -> list[Employe
                 employee.hours[csv_fields[i]] = both_hours
             else:
                 employee.hours[csv_fields[i]] = None
-        
+
         employee.string_to_hours()
         employees.append(employee)
-    
+
     return employees

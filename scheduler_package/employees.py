@@ -6,7 +6,7 @@ class Employee:
 
         self.hours = {}
         self.print_hours = {}
-    
+
     def string_to_hours(self):
         self.print_hours = {key: [] for key in self.hours}
         for key, hours in self.hours.items():
@@ -25,7 +25,7 @@ class Employee:
                     converted_hours.append(f"{hour1_12}")
                 else:
                     converted_hours.append(f"{hour1_12}:{minutes1:02}")
-                
+
                 if minutes2 == 0:
                     converted_hours.append(f"{hour2_12}")
                 else:

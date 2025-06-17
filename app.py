@@ -19,11 +19,11 @@ if __name__ == "__main__":
     employees = employees_to_csv(employees_file, employees_key)
 
     monday_hours = {}
-    
+
     for employee in employees:
         joined_hours = "-".join(employee.print_hours["monday-hours"])
         monday_hours.setdefault(joined_hours, []).append(employee.name)
-    
+
     for keys, values in monday_hours.items():
         print(keys)
         print(values)
