@@ -21,5 +21,14 @@ if __name__ == "__main__":
     monday_hours = {}
     
     for employee in employees:
-        monday_hours["-".join(employee.print_hours)] = []
-        monday_hours["-".join(employee.print_hours)].append(employee.name)
+        joined_hours = "-".join(employee.print_hours["monday-hours"])
+        monday_hours[joined_hours] = []
+    
+    for employee in employees:
+        joined_hours = "-".join(employee.print_hours["monday-hours"])
+        monday_hours[joined_hours].append(employee.name)
+    
+    for keys, values in monday_hours.items():
+        print(keys)
+        print(values)
+        print("\n")

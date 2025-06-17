@@ -22,7 +22,7 @@ def employees_to_csv(employees_file: str, employees_key: str="") -> list[Employe
         valid_key = True
         with open(employees_key, "r") as key:
             for line in key:
-                names = [line[:line.index("= ")], line[line.index("= ") + 2:-1]]
+                names = [line[:line.index("= ")], line[line.index("= ") + 2:].strip()]
                 txt_rows.append(names)
     
     for csv_row in csv_rows:
