@@ -1,9 +1,20 @@
 from csv import reader
-
-from .employees import Employee
+from datetime import datetime
+from employees import Employee
+from prettytable import PrettyTable
 
 
 def employees_to_csv(employees_file: str, employees_key: str = "") -> list[Employee]:
+    """
+    Creates a list of employees from a properly-formatted CSV file. *Optionally decodes the employee names*
+
+    Args:
+        employees_file (str): Path to the formatted CSV file containing all employee information.
+        employees_key (str): Path to the `employees_key.txt` file to decode randomized names.
+    
+    Returns:
+        list: A list of each employee.
+    """
     csv_fields = []
     csv_rows = []
 
@@ -51,3 +62,79 @@ def employees_to_csv(employees_file: str, employees_key: str = "") -> list[Emplo
         employees.append(employee)
 
     return employees
+
+def tuesday_schedule(employees: list=[], date: str="Month XX, 20XX") -> str:
+    """
+    Generates a `prettytable` list formatted like the library ones with names appropriately added.
+
+    Args:
+        employees (list): A list created with the `employees_to_csv` function.
+        date (str): A string of the current date formatted: `Month Day, Year`.
+    
+    Returns:
+        str: The **current date** followed by the **header `prettytable`** of work hours and schedule adjustments and a **content `prettytable`** of the incremented shifts.
+    """
+    current_date = f"Tuesday {date}"
+    header_table = PrettyTable(["who works today", "lunch breaks", "schedule changes"])
+    content_table = PrettyTable(["", "9-11", "11-1", "1-2", "2-4", "4-6", "6-8"])
+
+    full_time = "FULL-TIME:\n"
+    part_time = "PART-TIME:\n"
+    security = "SECURITY:\n"
+
+    ft_employees = {}
+    pt_employees = {}
+    sc_employees = {}
+    hours_key = []
+    for employee in employees:
+        if employee.hours["tuesday-hours"]:
+            day_hours = "-".join(employee.hours["tuesday-hours"])
+            employee_first_name = employee.name.split(" ")[0]
+            if employee.position in ["manager", "assistant manager", "supervisor", "full time"]:
+                _employee_type_processor(day_hours, ft_employees, employee_first_name)
+            elif employee.position in ["part time", "shelver"]:
+                _employee_type_processor(day_hours, pt_employees, employee_first_name)
+            elif employee.position in ["security full time", "security part time"]:
+                _employee_type_processor(day_hours, sc_employees, employee_first_name)
+            if employee.hours["tuesday-hours"] not in hours_key:
+                hours_key.append(employee.hours["tuesday-hours"])
+    
+    ft_employees = dict(sorted(ft_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    pt_employees = dict(sorted(pt_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    sc_employees = dict(sorted(sc_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    hours_key = sorted(hours_key, key=lambda x: int(x[0]))
+
+    for hours, employees in ft_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        full_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    for hours, employees in pt_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        part_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    for hours, employees in sc_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        security += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    
+    print(full_time)
+    print(part_time)
+    print(security)
+    return ft_employees
+
+def _employee_type_processor(day_hours: str, employee_type: dict, employee_first_name: str):
+    if not day_hours in employee_type:
+        employee_type[day_hours] = []
+        employee_type[day_hours].append(employee_first_name)
+    else:
+        employee_type[day_hours].append(employee_first_name)
+
+def _time_convert_to_12(time_24: str):
+    dt = datetime.strptime(time_24, "%H%M")
+    hour = dt.strftime("%I").lstrip("0")
+    minute = dt.minute
+
+    if minute == 0:
+        return hour
+    else:
+        return f"{hour}:{dt.strftime("%M")}"
