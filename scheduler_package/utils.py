@@ -1,208 +1,72 @@
 from csv import reader
 from datetime import datetime
 from employees import Employee
-from prettytable import PrettyTable
+from pathlib import Path
+# from prettytable import PrettyTable
+from typing import List, Optional
 
 
-def employees_to_csv(employees_file: str, employees_key: str = "") -> list[Employee]:
+def employees_to_csv(employees_file: str, employees_key: str = "") -> List[Employee]:
     """
-    Creates a list of employees from a properly-formatted CSV file. *Optionally decodes the employee names*
+    Parses a CSV of employee data and optionally decodes names using a key text file.
 
     Args:
-        employees_file (str): Path to the formatted CSV file containing all employee information.
+        employees_file (str): Path to the formatted CSV file containing all employee information
         employees_key (str): Path to the `employees_key.txt` file to decode randomized names.
     
     Returns:
-        list: A list of each employee.
+        list[Employee]: A list of Employee objects.
     """
-    csv_fields = []
-    csv_rows = []
-
-    valid_key = False
-    txt_rows = []
-
-    employees = []
-
     with open(employees_file, "r") as csvfile:
         csvreader = reader(csvfile)
-        csv_fields = next(csvreader)
-
-        for row in csvreader:
-            csv_rows.append(row)
-
-    if employees_key != "":
-        valid_key = True
-        with open(employees_key, "r") as key:
-            for line in key:
-                names = [line[: line.index("= ")], line[line.index("= ") + 2 :].strip()]
-                txt_rows.append(names)
-
-    for csv_row in csv_rows:
+        headers = next(csvreader)
+        rows = list(csvreader)
+    
+    key_map = {}
+    if Path(employees_key).exists():
+        with open(employees_key, "r") as keyfile:
+            for line in keyfile:
+                encoded, decoded = line.split("= ")
+                key_map[encoded.strip()] = decoded.strip()
+    
+    employees = []
+    for row in rows:
+        name = key_map.get(row[0], row[0])
         employee = Employee()
-        if valid_key:
-            for txt_row in txt_rows:
-                if csv_row[0] in txt_row[0]:
-                    employee.name = txt_row[1]
-        else:
-            employee.name = csv_row[0]
-        employee.rank = csv_row[1]
-        employee.position = csv_row[2]
+        employee.name = name
+        employee.first_name = name.split(" ")[0]
+        employee.initials = "".join(part[0].upper() for part in name.replace("-", " ").split() if part)
+        employee.rank = row[1]
+        employee.position = row[2]
 
-        for i in range(3, len(csv_fields)):
-            if csv_row[i] not in ["off", "none"]:
-                start_hour = csv_row[i].split("-")[0]
-                end_hour = csv_row[i].split("-")[1]
-                both_hours = [start_hour, end_hour]
-
-                employee.hours[csv_fields[i]] = both_hours
+        for i in range(3, len(headers)):
+            value = row[i]
+            key = headers[i]
+            if value not in {"off", "none"}:
+                start, end = value.split("-")
+                employee.hours[key] = [start, end]
             else:
-                employee.hours[csv_fields[i]] = None
-
+                employee.hours[key] = None
+        
         employee.string_to_hours()
         employees.append(employee)
-
+    
     return employees
 
-def tuesday_schedule(employees: list=[], date: str="Month XX, 20XX") -> str:
+
+class GenerateSchedule:
     """
-    Generates a `prettytable` list formatted like the library ones with names appropriately added.
+    Generates a formatted `prettytable.PrettyTable` schedule for a given day.
 
     Args:
-        employees (list): A list created with the `employees_to_csv` function.
-        date (str): A string of the current date formatted: `Month Day, Year`.
+        employees (List[Employee]): A list of employees.
+        date (str): Date string in the format *"Month Day, Year"*.
     
-    Returns:
-        str: The **current date** followed by the **header `prettytable`** of work hours and schedule adjustments and a **content `prettytable`** of the incremented shifts.
+    Methods:
+        str: Formatted string with header and content tables.
     """
-    current_date = f"Tuesday {date}"
-    header_table = PrettyTable(["who works today", "lunch breaks", "schedule changes"])
-    content_table = PrettyTable(["", "9-11", "11-1", "1-2", "2-4", "4-6", "6-8"])
-
-    full_time = "FULL-TIME:\n"
-    part_time = "PART-TIME:\n"
-    security = "SECURITY:\n"
-
-    lunches = "LUNCH BREAKS:\n"
-
-    changes = "CHANGES:\n"
-
-    ft_employees = {}
-    pt_employees = {}
-    sc_employees = {}
-
-    lunch_breaks = {}
-    lunch_keys = []
-
-    hours_key = []
-    for employee in employees:
-        if employee.hours["tuesday-hours"]:
-            day_hours = "-".join(employee.hours["tuesday-hours"])
-            employee_first_name = employee.name.split(" ")[0]
-            if employee.position in ["manager", "assistant manager", "supervisor", "full time"]:
-                _employee_type_processor(day_hours, ft_employees, employee_first_name)
-            elif employee.position in ["part time", "shelver"]:
-                _employee_type_processor(day_hours, pt_employees, employee_first_name)
-            elif employee.position in ["security full time", "security part time"]:
-                _employee_type_processor(day_hours, sc_employees, employee_first_name)
-            if employee.hours["tuesday-hours"] not in hours_key:
-                hours_key.append(employee.hours["tuesday-hours"])
-        if employee.hours["tuesday-lunch"] and employee.hours["tuesday-lunch"] != "none":
-            lunch_hours = "-".join(employee.hours["tuesday-lunch"])
-            employee_first_name = employee.name.split(" ")[0]
-            if lunch_hours not in lunch_breaks:
-                lunch_breaks[lunch_hours] = []
-                lunch_breaks[lunch_hours].append(employee_first_name)
-            else:
-                lunch_breaks[lunch_hours].append(employee_first_name)
-            if employee.hours["tuesday-lunch"] not in lunch_keys:
-                lunch_keys.append(employee.hours["tuesday-lunch"])
-
-    ft_employees = dict(sorted(ft_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    pt_employees = dict(sorted(pt_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    sc_employees = dict(sorted(sc_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    hours_key = sorted(hours_key, key=lambda x: int(x[0]))
-
-    for hours, employees in ft_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        full_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    for hours, employees in pt_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        part_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    for hours, employees in sc_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        security += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    
-    lunch_keys = sorted(lunch_keys, key=lambda x: int(x[0]))    
-    lunch_breaks = dict(sorted(lunch_breaks.items(), key=lambda item: int(item[0].split("-")[0])))
-
-    for hours, employees in lunch_breaks.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        lunches += f"{start_time}-{end_time}: {', '.join(employees)}\n\n"
-    
-    print(full_time)
-    print(part_time)
-    print(security)
-    print(lunches)
-
-    header_table.add_row([f"{full_time}\n{part_time}\n{security}", lunches, changes])
-    header_table.align = "l"
-    header_str = header_table.get_string()
-    header_width = int((len(header_str.split("\n")[0]) / 2) - (len(current_date) / 2))
-
-    date_formatted = " " * header_width
-    date_formatted += current_date
-
-    return f"{date_formatted}\n{header_table.get_string()}"
-
-def _employee_to_hours(employees: list, employee_type: dict, hours_key: dict, type_string: str):
-    for employee in employees:
-        if employee.hours["tuesday-hours"]:
-            day_hours = "-".join(employee.hours["tuesday-hours"])
-            employee_first_name = employee.name.split(" ")[0]
-            if employee.position in ["manager", "assistant manager", "supervisor", "full time"]:
-                _employee_type_processor(day_hours, ft_employees, employee_first_name)
-            elif employee.position in ["part time", "shelver"]:
-                _employee_type_processor(day_hours, pt_employees, employee_first_name)
-            elif employee.position in ["security full time", "security part time"]:
-                _employee_type_processor(day_hours, sc_employees, employee_first_name)
-            if employee.hours["tuesday-hours"] not in hours_key:
-                hours_key.append(employee.hours["tuesday-hours"])
-    
-    ft_employees = dict(sorted(ft_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    pt_employees = dict(sorted(pt_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    sc_employees = dict(sorted(sc_employees.items(), key=lambda item: int(item[0].split("-")[0])))
-    hours_key = sorted(hours_key, key=lambda x: int(x[0]))
-
-    for hours, employees in ft_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        full_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    for hours, employees in pt_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        part_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    for hours, employees in sc_employees.items():
-        start_time = _time_convert_to_12(hours.split("-")[0])
-        end_time = _time_convert_to_12(hours.split("-")[1])
-        security += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-
-def _employee_type_processor(day_hours: str, employee_type: dict, employee_first_name: str):
-    if not day_hours in employee_type:
-        employee_type[day_hours] = []
-        employee_type[day_hours].append(employee_first_name)
-    else:
-        employee_type[day_hours].append(employee_first_name)
-
-def _time_convert_to_12(time_24: str):
-    dt = datetime.strptime(time_24, "%H%M")
-    hour = dt.strftime("%I").lstrip("0")
-    minute = dt.minute
-
-    if minute == 0:
-        return hour
-    else:
-        return f"{hour}:{dt.strftime("%M")}"
+    def __init__(self, employees: List[Employee] = [], date: datetime = datetime.today()):
+        self.date = date
+        self.weekday = self.date.strftime("%A")
+        self.print_date = self.date.strftime("%A, %B ") + str(self.date.day) + self.date.strftime(", %Y")
+        print(self.print_date)
