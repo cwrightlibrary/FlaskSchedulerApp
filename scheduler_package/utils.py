@@ -82,10 +82,83 @@ def tuesday_schedule(employees: list=[], date: str="Month XX, 20XX") -> str:
     part_time = "PART-TIME:\n"
     security = "SECURITY:\n"
 
+    lunches = "LUNCH BREAKS:\n"
+
+    changes = "CHANGES:\n"
+
     ft_employees = {}
     pt_employees = {}
     sc_employees = {}
+
+    lunch_breaks = {}
+    lunch_keys = []
+
     hours_key = []
+    for employee in employees:
+        if employee.hours["tuesday-hours"]:
+            day_hours = "-".join(employee.hours["tuesday-hours"])
+            employee_first_name = employee.name.split(" ")[0]
+            if employee.position in ["manager", "assistant manager", "supervisor", "full time"]:
+                _employee_type_processor(day_hours, ft_employees, employee_first_name)
+            elif employee.position in ["part time", "shelver"]:
+                _employee_type_processor(day_hours, pt_employees, employee_first_name)
+            elif employee.position in ["security full time", "security part time"]:
+                _employee_type_processor(day_hours, sc_employees, employee_first_name)
+            if employee.hours["tuesday-hours"] not in hours_key:
+                hours_key.append(employee.hours["tuesday-hours"])
+        if employee.hours["tuesday-lunch"] and employee.hours["tuesday-lunch"] != "none":
+            lunch_hours = "-".join(employee.hours["tuesday-lunch"])
+            employee_first_name = employee.name.split(" ")[0]
+            if lunch_hours not in lunch_breaks:
+                lunch_breaks[lunch_hours] = []
+                lunch_breaks[lunch_hours].append(employee_first_name)
+            else:
+                lunch_breaks[lunch_hours].append(employee_first_name)
+            if employee.hours["tuesday-lunch"] not in lunch_keys:
+                lunch_keys.append(employee.hours["tuesday-lunch"])
+
+    ft_employees = dict(sorted(ft_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    pt_employees = dict(sorted(pt_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    sc_employees = dict(sorted(sc_employees.items(), key=lambda item: int(item[0].split("-")[0])))
+    hours_key = sorted(hours_key, key=lambda x: int(x[0]))
+
+    for hours, employees in ft_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        full_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    for hours, employees in pt_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        part_time += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    for hours, employees in sc_employees.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        security += f"{start_time}-{end_time}: {', '.join(employees)}\n"
+    
+    lunch_keys = sorted(lunch_keys, key=lambda x: int(x[0]))    
+    lunch_breaks = dict(sorted(lunch_breaks.items(), key=lambda item: int(item[0].split("-")[0])))
+
+    for hours, employees in lunch_breaks.items():
+        start_time = _time_convert_to_12(hours.split("-")[0])
+        end_time = _time_convert_to_12(hours.split("-")[1])
+        lunches += f"{start_time}-{end_time}: {', '.join(employees)}\n\n"
+    
+    print(full_time)
+    print(part_time)
+    print(security)
+    print(lunches)
+
+    header_table.add_row([f"{full_time}\n{part_time}\n{security}", lunches, changes])
+    header_table.align = "l"
+    header_str = header_table.get_string()
+    header_width = int((len(header_str.split("\n")[0]) / 2) - (len(current_date) / 2))
+
+    date_formatted = " " * header_width
+    date_formatted += current_date
+
+    return f"{date_formatted}\n{header_table.get_string()}"
+
+def _employee_to_hours(employees: list, employee_type: dict, hours_key: dict, type_string: str):
     for employee in employees:
         if employee.hours["tuesday-hours"]:
             day_hours = "-".join(employee.hours["tuesday-hours"])
@@ -116,11 +189,6 @@ def tuesday_schedule(employees: list=[], date: str="Month XX, 20XX") -> str:
         start_time = _time_convert_to_12(hours.split("-")[0])
         end_time = _time_convert_to_12(hours.split("-")[1])
         security += f"{start_time}-{end_time}: {', '.join(employees)}\n"
-    
-    print(full_time)
-    print(part_time)
-    print(security)
-    return ft_employees
 
 def _employee_type_processor(day_hours: str, employee_type: dict, employee_first_name: str):
     if not day_hours in employee_type:
