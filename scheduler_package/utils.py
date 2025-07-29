@@ -2,7 +2,6 @@ from csv import reader
 from datetime import datetime
 from employees import Employee
 from pathlib import Path
-# from prettytable import PrettyTable
 from typing import List, Optional
 
 
