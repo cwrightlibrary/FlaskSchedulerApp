@@ -7,7 +7,9 @@ class TableBuilder:
         self.order = ["header"]
 
         self.minimum_width = 10
-        self.maximum_width = 22
+        self.maximum_width = 25
+
+        self.table_width = 0
     
     def set_title(self, title: str):
         self.title = title
@@ -38,24 +40,40 @@ class TableBuilder:
     def set_maximum_width(self, width: int):
         self.maximum_width = width
     
+    def set_table_width(self, width: int):
+        self.table_width = width
+    
+    def get_table_width(self):
+        return self.table_width
+    
     def build_table(self):
-        for row in range(len(self.order)):
+        row = 0
+        while row < len(self.order):
             for col in range(len(self.cells[row])):
-                if len(self.cells[row][col]) > self.maximum_width:
-                    empty_newline = [""] * len(self.headers[0])
-                    newline = [""] * len(self.headers[0])
-                    text1 = ""
-                    text2 = ""
-                    for i in range(self.maximum_width, 0, -1):
-                        if self.cells[row][col][i] == " ":
-                            print("yes")
-                            newline[col] = self.cells[row][col][i + 1:]
-                            self.cells[row][col] = self.cells[row][col][:i]
-                            break
-                    # newline[col] = "TEST"
-                    self.order.insert(row + 1, "newline")
-                    self.sections.insert(row + 1, empty_newline)
-                    self.cells.insert(row + 1, newline)
+                if row < len(self.order) - 1 and self.order[row + 1] == "newline":
+                    if "!" in self.cells[row][col]:
+                        newline_text = self.cells[row][col].split("!")[1]
+                        replace_text = self.cells[row][col].split("!")[0]
+                        self.cells[row][col] = replace_text
+                        self.cells[row + 1][col] = replace_text
+                else:
+                    if len(self.cells[row][col]) > self.maximum_width:
+                        empty_newline = [""] * len(self.headers[0])
+                        newline = empty_newline
+                        if "!" in self.cells[row][col]:
+                            newline[col] = self.cells[row][col].split("!")[1]
+                            self.cells[row][col] = self.cells[row][col].split("!")[0]
+                        else:
+                            for i in range(self.maximum_width, 0, -1):
+                                if self.cells[row][col][i] == " ":
+                                    newline[col] = self.cells[row][col][i + 1:]
+                                    self.cells[row][col] = self.cells[row][col][:i]
+                                    break
+                        self.order.insert(row + 1, "newline")
+                        self.sections.insert(row + 1, empty_newline)
+                        self.cells.insert(row + 1, newline)
+                    continue
+            row += 1
 
         widths = []
         widths_rows = self.headers + self.sections + self.cells
@@ -83,8 +101,10 @@ class TableBuilder:
                 current_cell = self.order[idx]
                 next_cell = ""
 
-            if current_cell == "header":
+            if current_cell == "header" and next_cell == "section":
                 cell_type = "header"
+            elif current_cell == "header" and next_cell == "cell":
+                cell_type = "header_b"
             elif current_cell == "section":
                 cell_type = "section"
             elif current_cell in ["cell", "newline"] and next_cell == "cell":
@@ -97,7 +117,7 @@ class TableBuilder:
                 cell_type = "cell_c"
 
 
-            if instance == "header":
+            if instance in ["header", "header_b"]:
                 column_data = self.headers[idx]
             elif instance == "section":
                 column_data = self.sections[idx]
@@ -113,7 +133,7 @@ class TableBuilder:
                     loc = "end"
                 self._create_row(top_mid_bot, column_data[column], widths[column], loc, cell_type)
             
-            if cell_type != "header":
+            if cell_type not in ["header", "header_b"]:
                 top_mid_bot = [top_mid_bot[1], top_mid_bot[2]]
             if current_cell == "cell" and next_cell == "newline":
                 top_mid_bot = [top_mid_bot[0]]
@@ -122,6 +142,7 @@ class TableBuilder:
         title_text = self.title
         full_width = len("\n".join(all_rows[0]).split("\n")[0])
         self.title = self._center_text(title_text, full_width)
+        self.table_width = full_width
 
         full_string = f"{self.title}\n"
         for row in all_rows:
@@ -140,6 +161,11 @@ class TableBuilder:
         header = {
             "topl": "┏", "topr": "┓", "topsp": "┳",
             "botl": "┣", "botr": "┫", "botsp": "┻",
+            "horz": "━", "vert": "┃"
+        }
+        header_b = {
+            "topl": "┏", "topr": "┓", "topsp": "┳",
+            "botl": "┡", "botr": "┩", "botsp": "╇",
             "horz": "━", "vert": "┃"
         }
         section = {
@@ -162,9 +188,14 @@ class TableBuilder:
             "botl": "├", "botr": "┤", "botsp": "┼",
             "horz": "─", "vert": "│"
         }
+        cell_e = {
+
+        }
 
         if instance == "header":
             border = header
+        if instance == "header_b":
+            border = header_b
         elif instance == "section":
             border = section
         elif instance == "cell_a":
@@ -194,19 +225,19 @@ class TableBuilder:
                 mid = f"{" " * size} {border['vert']}"
 
         if pos == "start":
-            if instance == "header":
+            if instance in ["header", "header_b"]:
                 top = border["topl"] + border["horz"] * size + border["topsp"]
             bot = border["botl"] + border["horz"] * size + border["botsp"]
         elif pos == "mid":
-            if instance == "header":
+            if instance in ["header", "header_b"]:
                 top = border["horz"] + border["horz"] * size + border["topsp"]
             bot = border["horz"] + border["horz"] * size + border["botsp"]
         elif pos == "end":
-            if instance == "header":
+            if instance in ["header", "header_b"]:
                 top = border["horz"] + border["horz"] * size + border["topr"]
             bot = border["horz"] + border["horz"] * size + border["botr"]
         
-        if instance == "header":
+        if instance in ["header", "header_b"]:
             return (top, mid, bot)
         elif instance == "cell_d":
             return ("", mid, "")
@@ -236,22 +267,34 @@ class TableBuilder:
                     return f"{current_cell}_end"
     
     def save(self):
-        with open("schedule_table.txt", "w") as f:
+        with open("schedule_table.txt", "w", encoding="utf-8") as f:
             f.write(self.build_table())
 
     def __str__(self):
         return f"{self.build_table()}"
 
 test = TableBuilder(["", "9-11", "11-1", "1-2", "2-4", "4-6", "6-8"], "Test")
+test.set_title("Wednesday, July 30, 2025")
 test.add_row(["workroom"], section=True)
-test.add_row(["pick-up window", "Jess", "Yami 'til 11:30 Lindsey at 11:30", "Chris", "Shawn", "Cheryl", "Deborah"])
+test.add_row(["pick-up window", "Jess", "Yami 'til 11:30!Lindsey at 11:30", "Chris", "Shawn 'til 3:30!Cheryl at 3:30", "Cheryl", "Deborah"])
 test.add_row(["floor lead", "Chris", "Janet", "", "Janet", "", "Sonaite"])
-test.add_row(["computer desk"], section=True)
+test.add_row(["front desk"], section=True)
 test.add_row(["service pt 1", "Janet", "Cat", "Jess", "Chris", "Wendy", "Cheryl"])
-test.add_row(["service pt 1", "", "Emaleigh", "", "Lea", "Emaleigh", "Shawn"])
+test.add_row(["service pt 1", "", "Emaleigh 'til 12", "", "Lea", "Emaleigh", "Shawn"])
+test.add_row(["computer desk"], section=True)
+test.add_row(["service pt 2", "Lea", "Anthony", "Rod", "Jess", "Deborah at 4:30", "Wendy"])
+test.add_row(["service pt 2", "Emaleigh", "Chris 'til 12", "", "Lindsey", "Sonaite 'til 5:30", ""])
 test.add_row(["staff/time permitting"], section=True)
 test.add_row(["meetings/programs", "", "", "", "", "", ""])
 test.add_row(["project time", "RF, AY, YE", "RF, LS, JB", "LS, EK, LT, CA", "RF, AY, YE, SDK, EK", "MD, SS; LS; RF, YE, JB, CW, LT, JH, AY", "MD, LT"])
+
+test2 = TableBuilder(["who works today", "lunch breaks", "schedule changes"], "")
+test2.add_row(["Full Time", "Lunch", "NONE"])
+
+test.build_table()
+print(test.get_table_width())
+
+print(test2)
 
 print(test)
 # test.save()

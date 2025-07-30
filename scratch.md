@@ -1,17 +1,15 @@
 i have this python script:
 
 ```
-top, mid, bot = "", "", ""
+class Strings:
+    def __init__(self, strings: list):
+        self.minimum_size = 10
+        self.maximum_size = 25
+        self.table_width = 0
 
-def return_tmb(i):
-    ttop, tmid, tbot = f"{i}a", f"{i}b", f"{i}c"
-    return (ttop, tmid, tbot)
+        
+    
+    def set_table_width(self, width: int):
+        self.table_width = width
 
-for i in range(5):
-    ttop, tmid, tbot = return_tmb(i)
-    top += ttop
-    mid += tmid
-    bot += tbot
 ```
-
-how do i shorten this? i want to add the tuple `return_tmb` returns to `top`, `mid`, and `bot` automatically
