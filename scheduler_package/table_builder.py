@@ -10,6 +10,7 @@ class TableBuilder:
         self.maximum_width = 25
 
         self.table_width = 0
+        self.minimum_sizes = []
     
     def set_title(self, title: str):
         self.title = title
@@ -42,6 +43,12 @@ class TableBuilder:
     
     def set_table_width(self, width: int):
         self.table_width = width
+        count = len(self.headers[0])
+
+        base_width = width // count
+        remainder = width % count
+
+        self.minimum_sizes = [base_width + (1 if i < remainder else 0) for i in range(count)]
     
     def get_table_width(self):
         return self.table_width
@@ -79,9 +86,14 @@ class TableBuilder:
         widths_rows = self.headers + self.sections + self.cells
         widths_num_cols = len(self.headers[0])
 
+        if self.minimum_sizes != []:
+            widths = self.minimum_sizes
+
         for col in range(widths_num_cols):
             max_len = max((len(row[col]) for row in widths_rows if col < len(row)), default=0)
             widths.append(min(max(max_len + 2, self.minimum_width), self.maximum_width))
+        
+        self.table_width = sum(widths) + widths_num_cols + 1
         
         all_rows = []
         for idx, instance in enumerate(self.order):
@@ -142,9 +154,8 @@ class TableBuilder:
         title_text = self.title
         full_width = len("\n".join(all_rows[0]).split("\n")[0])
         self.title = self._center_text(title_text, full_width)
-        self.table_width = full_width
 
-        full_string = f"{self.title}\n"
+        full_string = ""
         for row in all_rows:
             full_string += f"{'\n'.join(row)}\n"
 
@@ -288,13 +299,9 @@ test.add_row(["staff/time permitting"], section=True)
 test.add_row(["meetings/programs", "", "", "", "", "", ""])
 test.add_row(["project time", "RF, AY, YE", "RF, LS, JB", "LS, EK, LT, CA", "RF, AY, YE, SDK, EK", "MD, SS; LS; RF, YE, JB, CW, LT, JH, AY", "MD, LT"])
 
-test2 = TableBuilder(["who works today", "lunch breaks", "schedule changes"], "")
-test2.add_row(["Full Time", "Lunch", "NONE"])
-
 test.build_table()
-print(test.get_table_width())
 
-print(test2)
-
+print(test.title)
 print(test)
+
 # test.save()

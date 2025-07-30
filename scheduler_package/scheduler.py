@@ -1,6 +1,5 @@
-from utils import employees_to_csv, GenerateSchedule
+from utils import GenerateSchedule
 
-employees = employees_to_csv("models/employees.csv", "models/employees_key.txt")
+schedule = GenerateSchedule("models/employees.csv", "models/employees_key.txt", "models/templates")
 
-tuesday = GenerateSchedule(employees)
-
+schedule.load_template("tuesday")
