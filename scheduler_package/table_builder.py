@@ -7,7 +7,7 @@ class TableBuilder:
         self.order = ["header"]
 
         self.minimum_width = 10
-        self.maximum_width = 20
+        self.maximum_width = 22
     
     def set_title(self, title: str):
         self.title = title
@@ -45,7 +45,7 @@ class TableBuilder:
         widths = []
         for col in range(widths_num_cols):
             max_len = max((len(row[col]) for row in widths_rows if col < len(row)), default=0)
-            widths.append(max(max_len + 2, self.minimum_width))
+            widths.append(min(max(max_len + 2, self.minimum_width), self.maximum_width))
         
         all_rows = []
         for idx, instance in enumerate(self.order):
